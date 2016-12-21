@@ -28,12 +28,8 @@ class IdleRule(RuleBase):
         return self.end_sample is None or self.to_datetime(sample["time"]) - self.to_datetime(
             self.end_sample["time"]) <= self.FIVE_MINUTES
 
-    def to_datetime(self, time_string:str):
-        timestamp, subseconds = time_string.split(".")
-        # only take milliseconds
-        dt = timestamp + "." + subseconds[:3]
-        datetime1 = datetime.strptime(time_string[:-4], '%Y-%m-%dT%H:%M:%S.%f')
-        return datetime1
+    def to_datetime(self, time_string: str):
+        return datetime.strptime(time_string.split(".")[0], '%Y-%m-%dT%H:%M:%S')
 
     def _update_end_sample(self, sample):
         self.end_sample = sample
