@@ -1,4 +1,6 @@
-from iss4e.webike.trips import IMEI, Event, Rule, IdleRule
+from iss4e.webike.trips.event import Event
+from iss4e.webike.trips.imei import IMEI
+from iss4e.webike.trips.rule import Rule, IdleRule
 
 
 class Trip:

@@ -1,4 +1,6 @@
-from iss4e.webike.trips import IMEI, Trip, Event
+from iss4e.webike.trips.event import Event
+from iss4e.webike.trips.imei import IMEI
+from iss4e.webike.trips.trip import Trip
 
 
 class TripDetector(object):
