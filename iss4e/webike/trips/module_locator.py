@@ -10,4 +10,7 @@ def _module_is_frozen():
 def module_path():
     if _module_is_frozen():
         return os.path.dirname(sys.executable)
+    if "__file__" not in dir():
+        return os.getcwd()
+
     return os.path.dirname(os.path.abspath(__file__))
