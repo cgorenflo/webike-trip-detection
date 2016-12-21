@@ -3,9 +3,7 @@ from itertools import chain
 from iss4e.db import influxdb
 from iss4e.util.config import load_config
 
-from iss4e.webike.trips import module_locator, TripDetector
-from iss4e.webike.trips.imei import IMEI
-
+from iss4e.webike.trips import module_locator, TripDetector, IMEI
 
 def _execute(series, samples):
     trips = TripDetector(IMEI(series)).processSamples(samples)

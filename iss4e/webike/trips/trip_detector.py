@@ -1,8 +1,8 @@
-from iss4e.webike.trips import *
+from iss4e.webike.trips import IMEI, Trip, Event
 
 
 class TripDetector(object):
-    def __init__(self, imei:IMEI):
+    def __init__(self, imei: IMEI):
         self._imei = imei
         self.sample_received = Event()
 
