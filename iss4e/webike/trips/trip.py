@@ -31,7 +31,7 @@ class Trip:
 
     def _pre_trip_start(self, sample):
         if self._belongs_to_trip(sample):
-            self._start_value = sample
+            self._start_value = sample["time"]
             self._process = self._trip_in_progress
 
     def _trip_in_progress(self, sample):
@@ -51,7 +51,7 @@ class Trip:
             self._process = self._trip_in_progress
 
     def _set_end(self, sample):
-        self._end_value = sample
+        self._end_value = sample["time"]
         self.end_changed(self._end_value)
 
     def _finalize(self):
