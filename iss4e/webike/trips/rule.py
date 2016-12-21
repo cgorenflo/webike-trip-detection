@@ -29,7 +29,7 @@ class IdleRule(RuleBase):
             self.end_sample["time"]) <= self.FIVE_MINUTES
 
     def to_datetime(self, time_string: str):
-        return datetime.strptime(time_string.split(".")[0], '%Y-%m-%dT%H:%M:%S')
+        return datetime.strptime(time_string.split(".")[0].split("Z")[0], '%Y-%m-%dT%H:%M:%S')
 
     def _update_end_sample(self, sample):
         self.end_sample = sample
