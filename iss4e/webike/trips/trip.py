@@ -1,19 +1,32 @@
 from iss4e.webike.trips import *
+from iss4e.webike.trips.imei import IMEI
 
 
 class Trip:
-    def __init__(self):
+    def __init__(self, imei: IMEI):
+        self._imei = imei
+
         self._trip_in_progress_rules = self._create_in_progress_rules()
         self._trip_ended_rules = self._create_ended_rules()
 
-        self._process = self._pre_trip_start
-
+        self._start_value = None
+        self._end_value = None
         self.is_finalized = False
+
         self.finalized = Event()
         self.end_changed = Event()
 
+        self._process = self._pre_trip_start
+
     def process(self, sample):
         self._process(sample)
+
+    def to_points(self):
+        if not self.is_finalized:
+            return ()
+
+        return (
+            self._create_point(self._start_value, {"start": True}), self._create_point(self._end_value, {"end": True}))
 
     def _pre_trip_start(self, sample):
         if self._belongs_to_trip(sample):
@@ -53,3 +66,10 @@ class Trip:
     def _create_ended_rules(self):
         idle_rule = IdleRule(self.end_changed)
         return [idle_rule]
+
+    def _create_point(self, time, fields: dict):
+        return {"measurement": "trips",
+                "tags": {"imei": self._imei},
+                "time": time,
+                "fields": fields
+                }

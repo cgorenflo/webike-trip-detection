@@ -2,7 +2,8 @@ from iss4e.webike.trips import *
 
 
 class TripDetector(object):
-    def __init__(self):
+    def __init__(self, imei:IMEI):
+        self._imei = imei
         self.sample_received = Event()
 
         self._trips = set()
@@ -26,7 +27,7 @@ class TripDetector(object):
 
     def _start_trip(self):
         self.sample_received.clear_handlers()
-        trip = Trip()
+        trip = Trip(self._imei)
         self.sample_received += trip.process
         trip.finalized += self._start_trip
         self._trips.add(trip)
