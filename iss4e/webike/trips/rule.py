@@ -1,4 +1,6 @@
 import abc
+from datetime import datetime, timedelta
+
 
 class RuleBase(object):
     __metaclass__ = abc.ABCMeta
@@ -9,7 +11,6 @@ class RuleBase(object):
 
 
 class Rule(object):
-
     def __init__(self, testing_function):
         self.function = testing_function
 
@@ -19,13 +20,17 @@ class Rule(object):
 
 class IdleRule(RuleBase):
     def __init__(self, end_changed_event):
-        self.FIVE_MINUTES = 5*60
+        self.FIVE_MINUTES = timedelta(minutes=5)
         self.end_sample = None
         end_changed_event += self._update_end_sample
 
     def belongs_to_trip(self, sample):
-        return self.end_sample is None or sample["time"] - self.end_sample["time"] <= self.FIVE_MINUTES
+        return self.end_sample is None or self.to_datetime(sample["time"]) - self.to_datetime(
+            self.end_sample["time"]) <= self.FIVE_MINUTES
+
+    def to_datetime(self, time_string):
+        datetime1 = datetime.strptime(time_string[:-4], '%Y-%m-%dT%H:%M:%S.%f')
+        return datetime1
 
     def _update_end_sample(self, sample):
         self.end_sample = sample
-
