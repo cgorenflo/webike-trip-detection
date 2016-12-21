@@ -9,7 +9,8 @@ class Trip:
         self.finalized = Event()
         self.end_changed = Event()
 
-        self._trip_in_progress_rules = [(Rule(lambda sample: sample["discharge_current"] > 510))]
+        self._trip_in_progress_rules = [
+            (Rule(lambda sample: sample["discharge_current"] is not None and sample["discharge_current"] > 510))]
         self._trip_ended_rules = [IdleRule(self.end_changed)]
 
         self._start_value = None
@@ -34,8 +35,11 @@ class Trip:
             self._process = self._trip_in_progress
 
     def _trip_in_progress(self, sample):
-        if not self._belongs_to_trip(sample):
+        # there could be a long period without data,
+        # so set the end to the currently last sample that still belongs to the trip
+        if self._belongs_to_trip(sample):
             self._set_end(sample)
+        else:
             self._process = self._post_possible_trip_end
 
     def _post_possible_trip_end(self, sample):
@@ -44,6 +48,7 @@ class Trip:
 
         elif self._belongs_to_trip(sample):
             self._set_end(sample)
+            self._process = self._trip_in_progress
 
     def _set_end(self, sample):
         self._end_value = sample
