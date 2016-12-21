@@ -21,15 +21,15 @@ class Rule(object):
 class IdleRule(RuleBase):
     def __init__(self, end_changed_event):
         self.FIVE_MINUTES = timedelta(minutes=5)
-        self.end_sample = None
+        self.sample_time = None
         end_changed_event += self._update_end_sample
 
     def belongs_to_trip(self, sample):
-        return self.end_sample is None or self.to_datetime(sample["time"]) - self.to_datetime(
-            self.end_sample["time"]) <= self.FIVE_MINUTES
+        return self.sample_time is None or self.to_datetime(sample["time"]) - self.to_datetime(
+            self.sample_time) <= self.FIVE_MINUTES
 
     def to_datetime(self, time_string: str):
         return datetime.strptime(time_string.split(".")[0].split("Z")[0], '%Y-%m-%dT%H:%M:%S')
 
     def _update_end_sample(self, sample):
-        self.end_sample = sample
+        self.sample_time = sample
