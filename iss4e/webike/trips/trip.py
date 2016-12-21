@@ -6,16 +6,15 @@ from iss4e.webike.trips.rule import Rule, IdleRule
 class Trip:
     def __init__(self, imei: IMEI):
         self._imei = imei
+        self.finalized = Event()
+        self.end_changed = Event()
 
-        self._trip_in_progress_rules = self._create_in_progress_rules()
-        self._trip_ended_rules = self._create_ended_rules()
+        self._trip_in_progress_rules = [(Rule(lambda sample: sample["discharge_current"] > 510))]
+        self._trip_ended_rules = [IdleRule(self.end_changed)]
 
         self._start_value = None
         self._end_value = None
         self.is_finalized = False
-
-        self.finalized = Event()
-        self.end_changed = Event()
 
         self._process = self._pre_trip_start
 
@@ -59,14 +58,6 @@ class Trip:
 
     def _trip_end_is_certain(self, sample):
         return [rule for rule in self._trip_ended_rules if not rule.belongs_to_trip(sample)]
-
-    def _create_in_progress_rules(self):
-        discharge_current_rule = Rule(lambda sample: sample["discharge_current"] > 510)
-        return [discharge_current_rule]
-
-    def _create_ended_rules(self):
-        idle_rule = IdleRule(self.end_changed)
-        return [idle_rule]
 
     def _create_point(self, time, fields: dict):
         return {"measurement": "trips",
