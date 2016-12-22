@@ -1,35 +1,24 @@
-from iss4e.webike.trips.event import Event
-from iss4e.webike.trips.imei import IMEI
+from typing import Iterable
+
+from iss4e.webike.trips.sample import Sample
+from iss4e.webike.trips.output import Output
 from iss4e.webike.trips.trip import Trip
 
 
 class TripDetector(object):
-    def __init__(self, imei: IMEI):
-        self._imei = imei
-        self.sample_received = Event()
-
-        self._trips = set()
+    def __init__(self, trip_output: Output):
+        self._trip_output = trip_output
+        self._trip = None
         self._start_trip()
 
-    def processSamples(self, samples):
+    def process_samples(self, samples: Iterable[Sample]):
         for sample in samples:
-            self.sample_received(sample)
-
-        finalized_trips = []
-        ongoing_trips = []
-
-        for trip in self._trips:
-            if trip.is_finalized:
-                finalized_trips.append(trip)
-            else:
-                ongoing_trips.append(trip)
-
-        self._trips = ongoing_trips
-        return finalized_trips
+            self._trip.add(sample)
 
     def _start_trip(self):
-        self.sample_received.clear_handlers()
-        trip = Trip(self._imei)
-        self.sample_received += trip.process
-        trip.finalized += self._start_trip
-        self._trips.add(trip)
+        self._trip = Trip()
+        # suppress arguments for the start of a new trip
+        self._trip.finalized += lambda start_sample, end_sample: self._start_trip()
+        self._trip.finalized += self._trip_output.collect
+
+        self._trip.discarded += self._start_trip

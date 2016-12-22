@@ -1,72 +1,52 @@
+from datetime import timedelta
+
 from iss4e.webike.trips.event import Event
-from iss4e.webike.trips.imei import IMEI
-from iss4e.webike.trips.rule import Rule, IdleRule
+from iss4e.webike.trips.sample import Sample
 
 
 class Trip:
-    def __init__(self, imei: IMEI):
-        self._imei = imei
-        self.finalized = Event()
-        self.end_changed = Event()
-
-        self._trip_in_progress_rules = [
-            (Rule(lambda sample: sample["discharge_current"] is not None and sample["discharge_current"] > 510))]
-        self._trip_ended_rules = [IdleRule(self.end_changed)]
-
-        self._start_value = None
-        self._end_value = None
+    def __init__(self):
         self.is_finalized = False
+        self.finalized = Event()
+        self.discarded = Event()
 
-        self._process = self._pre_trip_start
+        self._period = TripPeriod()
 
-    def process(self, sample):
-        self._process(sample)
+    def add(self, sample: Sample):
+        if self.is_finalized:
+            return
 
-    def to_points(self):
-        if not self.is_finalized:
-            return ()
-
-        return (
-            self._create_point(self._start_value, {"start": True}), self._create_point(self._end_value, {"end": True}))
-
-    def _pre_trip_start(self, sample):
         if self._belongs_to_trip(sample):
-            self._start_value = sample["time"]
-            self._process = self._trip_in_progress
+            self._period.add(sample)
+        elif self._trip_is_over(sample):
+            self._validate_trip()
 
-    def _trip_in_progress(self, sample):
-        # there could be a long period without data,
-        # so set the end to the currently last sample that still belongs to the trip
-        if self._belongs_to_trip(sample):
-            self._set_end(sample)
-        else:
-            self._process = self._post_possible_trip_end
+    def _belongs_to_trip(self, sample: Sample):
+        return sample["discharge_current"] is not None and sample["discharge_current"] > 510
 
-    def _post_possible_trip_end(self, sample):
-        if self._trip_end_is_certain(sample):
-            self._finalize()
+    def _trip_is_over(self, sample) -> bool:
+        return self._period.end["time"] is not None and sample["time"] is not None and \
+               sample["time"] - self._period.end["time"] >= timedelta(minutes=5)
 
-        elif self._belongs_to_trip(sample):
-            self._set_end(sample)
-            self._process = self._trip_in_progress
-
-    def _set_end(self, sample):
-        self._end_value = sample["time"]
-        self.end_changed(self._end_value)
-
-    def _finalize(self):
+    def _validate_trip(self):
         self.is_finalized = True
-        self.finalized()
+        if self._period.validate():
+            self.finalized(self._period.start.sample, self._period.end.sample)
+        else:
+            self.discarded()
 
-    def _belongs_to_trip(self, sample):
-        return [rule for rule in self._trip_in_progress_rules if rule.belongs_to_trip(sample)]
 
-    def _trip_end_is_certain(self, sample):
-        return [rule for rule in self._trip_ended_rules if not rule.belongs_to_trip(sample)]
+class TripPeriod(object):
+    def __init__(self):
+        self.start = Sample.empty()
+        self.end = Sample.empty()
 
-    def _create_point(self, time, fields: dict):
-        return {"measurement": "trips",
-                "tags": {"imei": self._imei},
-                "time": time,
-                "fields": fields
-                }
+    def add(self, sample: Sample):
+        if self.start == Sample.empty():
+            self.start = sample
+        else:
+            self.end = sample
+
+    def validate(self):
+        return self.start.sample["time"] is not None and self.end.sample["time"] is not None and \
+               self.end.sample["time"] - self.start.sample["time"] < timedelta(minutes=3)
