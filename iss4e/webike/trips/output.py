@@ -42,8 +42,8 @@ class MySqlInsertQuery(object):
             {"imei": trip.content[0].imei, "start": trip.content[0]["time"], "end": trip.content[-1]["time"]})
 
     def to_string(self):
-        return "INSERT INTO {table} {columns} VALUES {values}".format(table="trips", columns="(IMEI,start,end)",
-                                                                      values=self._get_values())
+        return "INSERT INTO {table} {columns} VALUES {values};".format(table="trips", columns="(IMEI,start,end)",
+                                                                       values=self._get_values())
 
     def _get_values(self):
         ",".join("({imei},{start},{end})".format(**value) for value in self._values)
