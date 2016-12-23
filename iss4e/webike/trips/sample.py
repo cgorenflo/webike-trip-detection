@@ -6,10 +6,11 @@ from iss4e.webike.trips.imei import IMEI
 
 class Sample(object):
     def __init__(self, series_selector: str, sample: dict):
+        self.imei = IMEI(series_selector)
+
         self._sample = sample
         if "time" in sample.keys():
             sample["time"] = DateTime(sample["time"])
-        self.imei = IMEI(series_selector)
 
     def __getitem__(self, item):
         if item in self._sample.keys():

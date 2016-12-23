@@ -1,6 +1,7 @@
 class Event(object):
-    def __init__(self):
+    def __init__(self, sender):
         self._handlers = set()
+        self._sender = sender
 
     def handle(self, handler):
         self._handlers.add(handler)
@@ -15,7 +16,7 @@ class Event(object):
 
     def fire(self, *args, **kargs):
         for handler in self._handlers:
-            handler(*args, **kargs)
+            handler(self._sender, *args, **kargs)
 
     def get_handler_count(self):
         return len(self._handlers)
