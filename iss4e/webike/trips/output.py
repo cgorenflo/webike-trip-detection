@@ -9,7 +9,7 @@ class InfluxPoints(object):
 
         trip_detected += self._handle_trip_detected
 
-    def _handle_trip_detected(self, trip):
+    def _handle_trip_detected(self, sender, trip):
         self._collect(trip)
 
     def _collect(self, trip: Trip):
@@ -32,7 +32,7 @@ class MySqlInsertQuery(object):
         self._values = []
         trip_detected += self._handle_trip_detected
 
-    def _handle_trip_detected(self, trip):
+    def _handle_trip_detected(self, sender, trip):
         self._collect(trip)
 
     def _collect(self, trip: Trip):
