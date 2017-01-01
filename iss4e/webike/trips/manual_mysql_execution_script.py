@@ -19,4 +19,4 @@ with influxdb.connect(**config["webike.influx"]) as influx_client, \
         output = MySqlInsertQuery(stream.trip_detected)
 
         stream.process()
-        my_sql_client.quey(output.query)
+        my_sql_client._query(output.to_string())
