@@ -18,13 +18,14 @@ with influxdb.connect(**config["webike.influx"]) as influx_client, \
                                                            "linear_acceleration_y", "linear_acceleration_z"])
 
     for _, series, samples in measurement:
-        logger.debug(__("Processing series {series}", series=series))
+        logger.info(__("Processing series {series}", series=series))
         stream = SampleStream(Sample(series, sample) for sample in samples)
         output = MySqlInsertQuery(stream.trip_detected)
 
         stream.process()
         try:
-            logger.debug("Sending query")
+            logger.info("Sending query")
+            logger.debug(output.to_string())
             my_sql_client.query(output.to_string())
         except:
             logger.error(__("Query that lead to the error:\n{query}", query=output.to_string()))
