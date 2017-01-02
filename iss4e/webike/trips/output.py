@@ -1,4 +1,5 @@
 import logging
+import string
 
 from iss4e.webike.trips.event import Event
 from iss4e.webike.trips.sample import Sample
@@ -43,7 +44,7 @@ class MySqlInsertQuery(object):
             return
 
         logger = logging.getLogger("iss4e.webike.trips")
-        logger.debug({"imei": trip.content[0].imei, "start": trip.content[0]["time"], "end": trip.content[-1]["time"]})
+        logger.debug({"imei": str(trip.content[0].imei), "start": str(trip.content[0]["time"]), "end": str(trip.content[-1]["time"])})
         self._values.append(
             {"imei": trip.content[0].imei, "start": trip.content[0]["time"], "end": trip.content[-1]["time"]})
 
@@ -55,5 +56,5 @@ class MySqlInsertQuery(object):
         else:
             return ""
 
-    def _get_values(self):
-        ",".join("({imei},{start},{end})".format(**value) for value in self._values)
+    def _get_values(self) -> string:
+        return ",".join("({imei},{start},{end})".format(**value) for value in self._values)
