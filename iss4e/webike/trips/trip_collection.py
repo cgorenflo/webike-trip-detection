@@ -1,3 +1,4 @@
+from iss4e.webike.trips.sample import Sample
 from iss4e.webike.trips.trip import Trip
 
 
@@ -7,7 +8,7 @@ class TripCollection(object):
         self.current_trip = None
         self._start_trip()
 
-    def process(self, sample):
+    def process(self, sample:Sample):
         self.current_trip.process(sample)
 
     def _start_trip(self):

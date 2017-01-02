@@ -21,11 +21,12 @@ with influxdb.connect(**config["webike.influx"]) as influx_client, \
         logger.info(__("Processing series {series}", series=series))
         trips = TripCollection()
         output = MySqlInsertQuery(trips.finalized_trips)
-
-        trips.process(Sample(series, sample) for sample in samples)
+        for sample in samples:
+            trips.process(Sample(series, sample))
         try:
             logger.info("Sending query")
             logger.debug(output)
             my_sql_client.query(output)
         except:
             logger.error(__("Query that lead to the error:\n{query}", query=output))
+            raise

@@ -70,5 +70,5 @@ class Trip:
         return self._last_recorded_sample["time"] is not None and self._last_trip_sample["time"] is not None and \
                self._last_recorded_sample["time"] - self._last_trip_sample["time"] >= timedelta(minutes=5)
 
-    def _belongs_to_trip(self, sample):
+    def _belongs_to_trip(self, sample:Sample):
         return sample["discharge_current"] is not None and sample["discharge_current"] > 510
