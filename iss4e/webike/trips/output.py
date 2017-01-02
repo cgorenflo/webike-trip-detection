@@ -42,7 +42,7 @@ class MySqlInsertQuery(object):
         if not trip.content:
             return
 
-        logger = logging.getLogger("webike.trips")
+        logger = logging.getLogger("iss4e.webike.trips")
         logger.debug({"imei": trip.content[0].imei, "start": trip.content[0]["time"], "end": trip.content[-1]["time"]})
         self._values.append(
             {"imei": trip.content[0].imei, "start": trip.content[0]["time"], "end": trip.content[-1]["time"]})
