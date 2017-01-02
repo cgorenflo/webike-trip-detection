@@ -6,22 +6,16 @@ from iss4e.webike.trips.sample import Sample
 
 
 class Trip:
-    def __init__(self, new_sample_received: Event):
-        self.detected = Event(self)
-        self.discarded = Event(self)
+    def __init__(self):
+        self.finalized = Event(self)
 
         self._trip_samples = []
         self._trip_sample_candidates = []
 
-        new_sample_received += self._handle_new_sample_received
-        self._unsubscribe_from_receiving_samples = lambda: self._unsubscrive_from(new_sample_received,
-                                                                                  self._handle_new_sample_received)
-
-    def _unsubscrive_from(self, event, handler):
-        event -= handler
+        self._process = self._process_before_start_found
 
     @property
-    def content(self) -> List[Sample]:
+    def samples(self) -> List[Sample]:
         return self._trip_samples
 
     @property
@@ -36,18 +30,9 @@ class Trip:
     def _last_recorded_sample(self):
         return self._trip_sample_candidates[-1] if self._trip_sample_candidates else Sample.empty()
 
-    def _handle_new_sample_received(self, sender, *args, **kargs):
-        if not args and not kargs:
-            return
-
-        if "sample" in kargs.keys():
-            sample = kargs["sample"]
-        else:
-            sample = args[0]
-
+    def process(self, sample: Sample):
         self._process(sample)
 
-    def _process(self, sample: Sample):
         if self._belongs_to_trip(sample):
             self._trip_samples += self._trip_sample_candidates
             self._trip_samples.append(sample)
@@ -55,14 +40,27 @@ class Trip:
             self._trip_sample_candidates.append(sample)
 
         if self._is_over():
-            self._unsubscribe_from_receiving_samples()
-            self._validate_trip()
+            if self._validate():
+                self.finalized(is_valid=True)
+            else:
+                self.finalized(is_valid=False)
 
-    def _validate_trip(self):
-        if self._validate():
-            self.detected()
+    def _process_before_start_found(self, sample: Sample):
+        if self._belongs_to_trip(sample):
+            self._process = self._process_after_start_found
+            self._trip_samples.append(sample)
+
+    def _process_after_start_found(self, sample: Sample):
+        if self._belongs_to_trip(sample):
+            self._trip_samples += self._trip_sample_candidates
+            self._trip_sample_candidates.clear()
+            self._trip_samples.append(sample)
         else:
-            self.discarded()
+            self._trip_sample_candidates.append(sample)
+
+            if self._is_over():
+                self._process = lambda sample: None
+                self.finalized(is_valid=self._validate())
 
     def _validate(self):
         return self._last_trip_sample["time"] is not None and self._first_trip_sample["time"] is not None and \
