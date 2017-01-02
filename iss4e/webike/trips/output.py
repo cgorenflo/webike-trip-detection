@@ -57,4 +57,4 @@ class MySqlInsertQuery(object):
             return ""
 
     def _get_values(self) -> string:
-        return ",".join("({imei},{start},{end})".format(**value) for value in self._values)
+        return ",".join('({imei},"{start}","{end}")'.format(**value) for value in self._values)
