@@ -26,7 +26,7 @@ with influxdb.connect(**config["webike.influx"]) as influx_client, \
         try:
             logger.info("Sending query")
             logger.debug(output)
-            my_sql_client.query(output)
+            my_sql_client.query(str(output))
         except:
-            logger.error(__("Query that lead to the error:\n{query}", query=output))
+            logger.error(__("Query that lead to the error:\n{query}", query=str(output)))
             raise

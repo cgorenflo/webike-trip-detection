@@ -14,6 +14,7 @@ with influxdb.connect(**config["webike.influx"]) as client:
 
     for _, series, samples in measurement:
         trips = TripCollection()
-        trips.process(Sample(series, sample) for sample in samples)
+        for sample in samples:
+            trips.process(Sample(series, sample) )
         output = InfluxPoints(trips.finalized_trips)
         client.write_points(output.points)
