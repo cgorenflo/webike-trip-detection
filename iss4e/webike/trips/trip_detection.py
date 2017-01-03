@@ -1,8 +1,35 @@
+import logging
 from datetime import timedelta
-from typing import List
+from typing import Iterable, List
 
-from iss4e.webike.trips.event import Event
-from iss4e.webike.trips.sample import Sample
+from iss4e.webike.trips.auxiliary import Sample, Event
+from iss4e.util.brace_message import BraceMessage as __
+
+
+class TripCollection(object):
+    def __init__(self):
+        self.trips = []
+        self.logger = logging.getLogger("iss4e.webike.trips")
+        self.current_trip = None
+        self._start_trip()
+
+    @property
+    def finalized_trips(self) -> Iterable[Trip]:
+        self.logger.debug(__("Return {count} trips", count=len(self.trips)))
+        return self.trips
+
+    def process(self, sample: Sample):
+        self.current_trip.process(sample)
+
+    def _start_trip(self):
+        trip = Trip()
+        trip.finalized += self._handle_trip_finalized
+        self.current_trip = trip
+
+    def _handle_trip_finalized(self, sender, *args, **kargs):
+        if kargs["is_valid"]:
+            self.trips.append(sender)
+        self._start_trip()
 
 
 class Trip:
@@ -58,5 +85,5 @@ class Trip:
         return self._last_recorded_sample["time"] is not None and self._last_trip_sample["time"] is not None and \
                self._last_recorded_sample["time"] - self._last_trip_sample["time"] >= timedelta(minutes=5)
 
-    def _belongs_to_trip(self, sample:Sample):
+    def _belongs_to_trip(self, sample: Sample):
         return sample["discharge_current"] is not None and sample["discharge_current"] > 510

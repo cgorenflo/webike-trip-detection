@@ -1,12 +1,11 @@
-from iss4e.db import mysql, influxdb
-from iss4e.util.config import load_config
 import logging
 
-from iss4e.webike.trips import module_locator
-from iss4e.webike.trips.output import MySqlInsertQuery
-from iss4e.webike.trips.sample import Sample
-from iss4e.webike.trips.trip_collection import TripCollection
+from iss4e.db import mysql, influxdb
 from iss4e.util.brace_message import BraceMessage as __
+from iss4e.util.config import load_config
+from iss4e.webike.trips import module_locator, Sample, TripCollection
+
+import iss4e.webike.trips.scripts.output_variants as out
 
 config = load_config(module_locator.module_path())
 logger = logging.getLogger("iss4e.webike.trips")
@@ -22,7 +21,7 @@ with influxdb.connect(**config["webike.influx"]) as influx_client, \
         trips = TripCollection()
         for sample in samples:
             trips.process(Sample(series, sample))
-        query = str(MySqlInsertQuery(trips.finalized_trips))
+        query = out.create_mysql_query(trips.finalized_trips)
         if query:
             try:
                 logger.info("Sending query")
