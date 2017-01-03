@@ -1,5 +1,7 @@
+import ast
 from datetime import datetime
 from itertools import zip_longest
+import re
 
 
 class Event(object):
@@ -51,7 +53,7 @@ class DateTime(object):
 
 class IMEI(object):
     def __init__(self, series_selector: str):
-        self._series_selector = "" if series_selector == "" else series_selector.split("'")[1]
+        self._series_selector = "" if series_selector == "" else re.search(r'\d+', series_selector).group()
 
     def __str__(self):
         return self._series_selector
@@ -69,11 +71,25 @@ class IMEI(object):
 
 class Sample(object):
     def __init__(self, series_selector: str, sample: dict):
-        self.imei = IMEI(series_selector)
-
         self._sample = sample
+        self._sample["imei"] = IMEI(series_selector)
         if "time" in sample.keys():
             sample["time"] = DateTime(sample["time"])
+
+    def snapshot(self):
+        return {key: str(value) for key, value in self._sample.items()}
+
+    def restore(self, snapshot):
+        self._sample  = {"imei": IMEI(snapshot["imei"]), "time": DateTime(snapshot["time"])}
+        for key, value in snapshot :
+            if key != "imei" and key != "time":
+                self._sample[key] = ast.literal_eval(value)
+
+        return self
+
+    @property
+    def imei(self):
+        return self._sample["imei"]
 
     def __getitem__(self, item):
         if item in self._sample.keys():

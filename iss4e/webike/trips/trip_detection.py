@@ -6,32 +6,6 @@ from iss4e.webike.trips.auxiliary import Sample, Event
 from iss4e.util.brace_message import BraceMessage as __
 
 
-class TripCollection(object):
-    def __init__(self):
-        self.trips = []
-        self.logger = logging.getLogger("iss4e.webike.trips")
-        self.current_trip = None
-        self._start_trip()
-
-    @property
-    def finalized_trips(self) -> Iterable[Trip]:
-        self.logger.debug(__("Return {count} trips", count=len(self.trips)))
-        return self.trips
-
-    def process(self, sample: Sample):
-        self.current_trip.process(sample)
-
-    def _start_trip(self):
-        trip = Trip()
-        trip.finalized += self._handle_trip_finalized
-        self.current_trip = trip
-
-    def _handle_trip_finalized(self, sender, *args, **kargs):
-        if kargs["is_valid"]:
-            self.trips.append(sender)
-        self._start_trip()
-
-
 class Trip:
     def __init__(self):
         self.finalized = Event(self)
@@ -87,3 +61,53 @@ class Trip:
 
     def _belongs_to_trip(self, sample: Sample):
         return sample["discharge_current"] is not None and sample["discharge_current"] > 510
+
+    def snapshot(self):
+        return {"samples": [sample.snapshot() for sample in self._trip_samples],
+                "candidates": [sample.snapshot() for sample in self._trip_sample_candidates],
+                "state": self._process.__name__}
+
+    def restore(self, snapshot):
+        self._trip_samples = [Sample.empty().restore(sample) for sample in snapshot["samples"]]
+        self._trip_sample_candidates = [Sample.empty().restore(sample) for sample in snapshot["candidates"]]
+        self._process = getattr(self, snapshot["state"])
+
+        return self
+
+
+class TripCollection(object):
+    def __init__(self):
+        self._trips = []
+        self._logger = logging.getLogger("iss4e.webike.trips")
+        self._current_trip = None
+        self._start_trip()
+
+    def read_finalized_trip_buffer(self) -> Iterable[Trip]:
+        self._logger.debug(__("Return {count} trips", count=len(self._trips)))
+        trips = self._trips
+        self._trips = []
+        return trips
+
+    def process(self, sample: Sample):
+        self._current_trip.process(sample)
+
+    def _start_trip(self):
+        trip = Trip()
+        trip.finalized += self._handle_trip_finalized
+        self._current_trip = trip
+
+    def _handle_trip_finalized(self, sender, *args, **kargs):
+        if kargs["is_valid"]:
+            self._trips.append(sender)
+        self._start_trip()
+
+    def snapshot(self):
+        return {"trips": [trip.snapshot() for trip in self._trips], "current_trip": self._current_trip.snapshot()}
+
+    def restore(self, snapshot: dict):
+        for trip_snapshot in snapshot["trips"]:
+            self._trips.append(Trip().restore(trip_snapshot))
+
+        self._current_trip = Trip().restore(snapshot["current_trip"])
+
+        return self
