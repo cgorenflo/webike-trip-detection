@@ -15,6 +15,7 @@ setup(
     description='WeBike trip detection',
     packages=find_packages(),
     install_requires=[
-        'iss4e_toolchain>=0.1.0'
+        'iss4e_toolchain>=0.1.0',
+        'kapacitor-udf'
     ]
 )
