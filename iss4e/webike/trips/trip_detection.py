@@ -28,7 +28,7 @@ class Trip:
         return self._trip_samples[-1] if self._trip_samples else Sample.empty()
 
     @property
-    def _last_recorded_sample(self):
+    def _last_recorded_candidate(self):
         return self._trip_sample_candidates[-1] if self._trip_sample_candidates else Sample.empty()
 
     def process(self, sample: Sample):
@@ -40,27 +40,25 @@ class Trip:
             self._trip_samples.append(sample)
 
     def _process_after_start_found(self, sample: Sample):
-        if self._belongs_to_trip(sample):
+        self._trip_sample_candidates.append(sample)
+        if self._is_over():
+            self._process = lambda s: None
+            self.finalized(is_valid=self._validate())
+
+        elif self._belongs_to_trip(sample):
             self._trip_samples += self._trip_sample_candidates
             self._trip_sample_candidates.clear()
-            self._trip_samples.append(sample)
-        else:
-            self._trip_sample_candidates.append(sample)
 
-            if self._is_over():
-                self._process = lambda sample: None
-                self.finalized(is_valid=self._validate())
+    def _belongs_to_trip(self, sample: Sample):
+        return sample["discharge_current"] is not None and sample["discharge_current"] > 515
+
+    def _is_over(self):
+        return self._last_recorded_candidate["time"] is not None and self._last_trip_sample["time"] is not None and \
+               self._last_recorded_candidate["time"] - self._last_trip_sample["time"] >= timedelta(minutes=5)
 
     def _validate(self):
         return self._last_trip_sample["time"] is not None and self._first_trip_sample["time"] is not None and \
                self._last_trip_sample["time"] - self._first_trip_sample["time"] >= timedelta(minutes=3)
-
-    def _is_over(self):
-        return self._last_recorded_sample["time"] is not None and self._last_trip_sample["time"] is not None and \
-               self._last_recorded_sample["time"] - self._last_trip_sample["time"] >= timedelta(minutes=5)
-
-    def _belongs_to_trip(self, sample: Sample):
-        return sample["discharge_current"] is not None and sample["discharge_current"] > 510
 
     def snapshot(self):
         return {"samples": [sample.snapshot() for sample in self._trip_samples],
@@ -80,6 +78,7 @@ class TripCollection(object):
         self._trips = []
         self._logger = logging.getLogger("iss4e.webike.trips")
         self._current_trip = None
+        self._current_sample = None
         self._start_trip()
 
     def read_finalized_trip_buffer(self) -> Iterable[Trip]:
@@ -89,6 +88,7 @@ class TripCollection(object):
         return trips
 
     def process(self, sample: Sample):
+        self._current_sample = sample
         self._current_trip.process(sample)
 
     def _start_trip(self):
@@ -96,10 +96,11 @@ class TripCollection(object):
         trip.finalized += self._handle_trip_finalized
         self._current_trip = trip
 
-    def _handle_trip_finalized(self, sender, *args, **kargs):
-        if kargs["is_valid"]:
+    def _handle_trip_finalized(self, sender, is_valid: bool):
+        if is_valid:
             self._trips.append(sender)
         self._start_trip()
+        self._current_trip.process(self._current_sample)
 
     def snapshot(self):
         return {"trips": [trip.snapshot() for trip in self._trips], "current_trip": self._current_trip.snapshot()}
