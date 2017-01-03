@@ -33,18 +33,6 @@ class Trip:
     def process(self, sample: Sample):
         self._process(sample)
 
-        if self._belongs_to_trip(sample):
-            self._trip_samples += self._trip_sample_candidates
-            self._trip_samples.append(sample)
-        else:
-            self._trip_sample_candidates.append(sample)
-
-        if self._is_over():
-            if self._validate():
-                self.finalized(is_valid=True)
-            else:
-                self.finalized(is_valid=False)
-
     def _process_before_start_found(self, sample: Sample):
         if self._belongs_to_trip(sample):
             self._process = self._process_after_start_found

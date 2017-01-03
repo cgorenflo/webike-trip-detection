@@ -1,6 +1,8 @@
 import string
 from typing import Iterable
 
+import logging
+
 from iss4e.webike.trips.sample import Sample
 from iss4e.webike.trips.trip import Trip
 
@@ -30,6 +32,8 @@ class MySqlInsertQuery(object):
 
     def __str__(self):
         if not self._values:
+            logger = logging.getLogger("iss4e.webike.trips")
+            logger.debug("Empty query")
             return ""
 
         return "INSERT INTO {table} {columns} VALUES {values};".format(table="trips", columns="(IMEI,start,end)",
