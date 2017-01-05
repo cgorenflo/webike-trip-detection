@@ -1,0 +1,5 @@
+stream
+    .from()
+        .database('webike')
+        .measurement('sensor_data')
+    .tripdetection()
