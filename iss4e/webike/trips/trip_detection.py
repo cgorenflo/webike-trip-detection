@@ -1,6 +1,6 @@
 import logging
 from datetime import timedelta
-from typing import Iterable, List
+from typing import List
 
 from iss4e.webike.trips.auxiliary import Sample, Event
 from iss4e.util.brace_message import BraceMessage as __
@@ -42,12 +42,15 @@ class Trip:
     def _process_after_start_found(self, sample: Sample):
         self._trip_sample_candidates.append(sample)
         if self._is_over():
-            self._process = lambda s: None
+            self._process = self._do_nothing
             self.finalized(is_valid=self._validate())
 
         elif self._belongs_to_trip(sample):
             self._trip_samples += self._trip_sample_candidates
             self._trip_sample_candidates.clear()
+
+    def _do_nothing(self, sample: Sample):
+        return
 
     def _belongs_to_trip(self, sample: Sample):
         return sample["discharge_current"] is not None and sample["discharge_current"] > 515
@@ -81,7 +84,7 @@ class TripCollection(object):
         self._current_sample = None
         self._start_trip()
 
-    def read_finalized_trip_buffer(self) -> Iterable[Trip]:
+    def read_finalized_trip_buffer(self) -> List[Trip]:
         self._logger.debug(__("Return {count} trips", count=len(self._trips)))
         trips = self._trips
         self._trips = []
@@ -96,7 +99,7 @@ class TripCollection(object):
         trip.finalized += self._handle_trip_finalized
         self._current_trip = trip
 
-    def _handle_trip_finalized(self, sender, is_valid: bool):
+    def _handle_trip_finalized(self, sender:Trip, is_valid: bool):
         if is_valid:
             self._trips.append(sender)
         self._start_trip()
@@ -109,6 +112,7 @@ class TripCollection(object):
         for trip_snapshot in snapshot["trips"]:
             self._trips.append(Trip().restore(trip_snapshot))
 
-        self._current_trip = Trip().restore(snapshot["current_trip"])
+        self._start_trip()
+        self._current_trip = self._current_trip.restore(snapshot["current_trip"])
 
         return self
