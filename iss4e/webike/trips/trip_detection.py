@@ -1,9 +1,11 @@
 import logging
+import math
 from datetime import timedelta
 from typing import List
 
-from iss4e.webike.trips.auxiliary import Sample, Event
 from iss4e.util.brace_message import BraceMessage as __
+
+from iss4e.webike.trips.auxiliary import Sample, Event
 
 
 class Trip:
@@ -53,7 +55,13 @@ class Trip:
         return
 
     def _belongs_to_trip(self, sample: Sample):
-        return sample["discharge_current"] is not None and sample["discharge_current"] > 515
+        return (sample["discharge_current"] is not None and sample["discharge_current"] > 515) or \
+               (sample["linear_acceleration_x"] is not None and sample["linear_acceleration_y"] is not None and sample[
+                   "linear_acceleration_z"] is not None and math.sqrt(
+                   math.pow(sample["linear_acceleration_x"], 2) + math.pow(sample["linear_acceleration_y"],
+                                                                           2) + math.pow(
+                       sample["linear_acceleration_z"], 2))
+                > 1);
 
     def _is_over(self):
         return self._last_recorded_candidate["time"] is not None and self._last_trip_sample["time"] is not None and \
@@ -99,7 +107,7 @@ class TripCollection(object):
         trip.finalized += self._handle_trip_finalized
         self._current_trip = trip
 
-    def _handle_trip_finalized(self, sender:Trip, is_valid: bool):
+    def _handle_trip_finalized(self, sender: Trip, is_valid: bool):
         if is_valid:
             self._trips.append(sender)
         self._start_trip()
