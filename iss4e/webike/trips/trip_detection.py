@@ -56,12 +56,11 @@ class Trip:
 
     def _belongs_to_trip(self, sample: Sample):
         return (sample["discharge_current"] is not None and sample["discharge_current"] > 515) or \
-               (sample["linear_acceleration_x"] is not None and sample["linear_acceleration_y"] is not None and sample[
-                   "linear_acceleration_z"] is not None and math.sqrt(
-                   math.pow(sample["linear_acceleration_x"], 2) + math.pow(sample["linear_acceleration_y"],
-                                                                           2) + math.pow(
-                       sample["linear_acceleration_z"], 2))
-                > 1);
+               (sample["linear_acceleration_x"] is not None and sample["linear_acceleration_y"] is not None and
+                sample["linear_acceleration_z"] is not None and
+                math.pow(sample["linear_acceleration_x"], 2) +
+                math.pow(sample["linear_acceleration_y"], 2) +
+                math.pow(sample["linear_acceleration_z"], 2) > 4)
 
     def _is_over(self):
         return self._last_recorded_candidate["time"] is not None and self._last_trip_sample["time"] is not None and \
